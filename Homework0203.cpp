@@ -1,4 +1,5 @@
-/* Main project for Lightning exercises with Diffuse Maps on the container texture.*/
+/* Main project for Lightning exercises with Diffuse Maps on the container texture. */
+// homework 2 and 3
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 
@@ -132,7 +133,19 @@ int main() {
 		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-};
+	};
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
 
 	// Cube VAO and VBO
@@ -164,7 +177,7 @@ int main() {
 
 	// Creates the shader program objects
 	// shader for the lighting of the objects in the scene
-	Shader lightingShader = Shader("Shaders/DiffuseMaps/vertex_shader_light.glsl", "Shaders/DiffuseMaps/fragment_shader_light.glsl");
+	Shader lightingShader = Shader("Shaders/DiffuseMaps/vertex_shader_light.glsl", "Shaders/Homework02/fragment_shader_light.glsl");
 	// shader for the source light 
 	Shader lightCubeShader = Shader("Shaders/Es4Es5/vertex_shader_cubeLight.glsl", "Shaders/Es4Es5/fragment_shader_cubeLight.glsl");
 
@@ -203,16 +216,9 @@ int main() {
 		lightingShader.setFloatVec3("light.specular", 1.0f, 1.0f, 1.0f); 
 
 		// light and camera positions
-		lightingShader.setFloatVec3("light.position", lightPos.x, lightPos.y, lightPos.z);
+		lightingShader.setFloatVec3("light.direction", -0.2f, -1.0f, -0.3f);
 		lightingShader.setFloatVec3("viewPos", camera_pos.x, camera_pos.y, camera_pos.z);
 		
-
-		// Binds the diffuse map
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseMap);
-		// Bind the specular map
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, specularMap);
 
 		// Necessario per gestire il fatto che stiamo mostrando una finestra full screen
 		glfwGetFramebufferSize(window, &scrWidth, &scrHeight);
@@ -235,15 +241,33 @@ int main() {
 		// world transformation
 		glm::mat4 model;
 		model = glm::mat4(1.0f);
-
 		lightingShader.setFloatMat4("model", 1, GL_FALSE, model);
 
-		// renders the cube
+		// Binds the diffuse map
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseMap);
+		// Bind the specular map
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);
+
+		// renders more cubes
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for(unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			lightingShader.setFloatMat4("model", 1, GL_FALSE, model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		// renders the cube
+		// glBindVertexArray(cubeVAO);
+		// glDrawArrays(GL_TRIANGLES, 0, 36);
 			
-		// draws the lamp object
-		lightCubeShader.Activate();
+		// the lamp object is useless when we define a directional light
+		/* lightCubeShader.Activate();
 		lightCubeShader.setFloatMat4("proj", 1, GL_FALSE, proj);
 		lightCubeShader.setFloatMat4("view", 1, GL_FALSE, view);
 		model = glm::mat4(1.0f);
@@ -252,7 +276,7 @@ int main() {
 		lightCubeShader.setFloatMat4("model", 1, GL_FALSE, model);
 
 		glBindVertexArray(lightCubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36); */
 
 		// Swaps the front and the back buffer of the specified window
 		glfwSwapBuffers(window);
@@ -278,7 +302,7 @@ unsigned int loadTexture(const char* path) {
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum format = 0;
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
